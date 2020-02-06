@@ -54,6 +54,7 @@ class ProductControllerTest {
                 .andExpect(view().name("products"))
                 .andExpect(model().attribute(
                         "products", products));
+        verify(repository).findAll();
     }
 
     @Test
