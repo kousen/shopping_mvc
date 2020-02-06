@@ -19,10 +19,11 @@ public class AppInit implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        repository.deleteAll();
-        repository.saveAll(Arrays.asList(
-                new Product("baseball", 9.99),
-                new Product("football", 14.95),
-                new Product("basketball", 11.99)));
+        if (repository.count() == 0) {
+            repository.saveAll(Arrays.asList(
+                    new Product("baseball", 9.99),
+                    new Product("football", 14.95),
+                    new Product("basketball", 11.99)));
+        }
     }
 }
