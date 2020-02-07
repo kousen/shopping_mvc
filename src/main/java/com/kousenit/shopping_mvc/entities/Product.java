@@ -3,6 +3,7 @@ package com.kousenit.shopping_mvc.entities;
 import lombok.Data;
 
 import javax.persistence.*;
+import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 
@@ -17,7 +18,7 @@ public class Product {
     @NotBlank(message = "A name is required")
     private String name;
 
-    @Min(value = 0, message = "Price must be greater than zero")
+    @DecimalMin(value = "0.0", message = "Price must be greater than zero")
     private double price;
 
     public Product() {}

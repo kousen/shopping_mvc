@@ -52,8 +52,7 @@ class ProductControllerTest {
         mvc.perform(get("/products"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("products"))
-                .andExpect(model().attribute(
-                        "products", products));
+                .andExpect(model().attribute("products", products));
         verify(repository).findAll();
     }
 

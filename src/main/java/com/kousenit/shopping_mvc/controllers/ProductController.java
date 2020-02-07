@@ -4,7 +4,6 @@ import com.kousenit.shopping_mvc.dao.ProductRepository;
 import com.kousenit.shopping_mvc.entities.Product;
 import com.kousenit.shopping_mvc.entities.ProductNotFoundException;
 import lombok.extern.slf4j.Slf4j;
-import org.dom4j.rule.Mode;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -48,7 +47,7 @@ public class ProductController {
     public String addProduct(@Valid Product product, Errors errors) {
         if (errors.hasErrors()) {
             log.info("Errors: " + errors);
-            return "forward:products";
+            return "products";
         }
 
         log.info("Saving product: " + product);
