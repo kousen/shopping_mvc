@@ -1,16 +1,16 @@
 package com.kousenit.shopping_mvc.controllers;
 
 import com.kousenit.shopping_mvc.entities.Product;
-import com.kousenit.shopping_mvc.entities.ProductNotFoundException;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientException;
@@ -19,11 +19,14 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SuppressWarnings("GrazieInspection")
+@SuppressWarnings({"GrazieInspection", "SqlResolve", "SqlNoDataSourceInspection"})
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Transactional
 @Profile("test")
 class ProductRestControllerTest {
+    @LocalServerPort
+    private int randomServerPort;
+
     @Autowired
     private TestRestTemplate template;
 
@@ -35,9 +38,23 @@ class ProductRestControllerTest {
                 (rs, rowNum) -> rs.getInt("id"));
     }
 
+    // Odd contortions you need to go through to get a List<Product>
+    private List<Product> getProducts(Double minPrice) {
+        String url = "http://localhost:" + randomServerPort + "/rest";
+        if (minPrice != null) {
+            url += "?minimumPrice=" + minPrice;
+        }
+        ResponseEntity<List<Product>> productsEntity =
+                template.exchange(url, HttpMethod.GET, null,
+                        new ParameterizedTypeReference<>() {});
+        return productsEntity.getBody();
+    }
+
     @Test
     void getAll() {
-
+        List<Product> products = getProducts(null);
+        assertNotNull(products);
+        assertEquals(4, products.size());
     }
 
     @Test
@@ -58,7 +75,6 @@ class ProductRestControllerTest {
     void getSingleProductThatDoesNotExist() {
         List<Integer> ids = getIds();
         assertFalse(ids.contains(999));
-
         assertThrows(RestClientException.class,
                 () -> template.getForEntity("/rest/{id}", Product.class, 999));
     }
@@ -73,7 +89,11 @@ class ProductRestControllerTest {
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         Product savedProduct = response.getBody();
         assertAll(
-                () -> assertEquals(product.getName(), savedProduct.getName()),
+                () -> assertNotNull(savedProduct),
+                () -> {
+                    assert savedProduct != null;
+                    assertEquals(product.getName(), savedProduct.getName());
+                },
                 () -> assertEquals(product.getPrice(), savedProduct.getPrice(), 0.01),
                 () -> assertNotNull(savedProduct.getId()));
     }
@@ -86,21 +106,23 @@ class ProductRestControllerTest {
         template.put("/rest/{id}", product, product.getId());
     }
 
-
     @Test
     void getProductsWithMinimumPrice() {
-
+        double min = 12.0;
+        List<Product> products = getProducts(min);
+        assertNotNull(products);
+        assertEquals(2, products.size());
+        products.forEach(product -> assertTrue(product.getPrice() > min));
     }
 
-    @Test @Disabled
+    @Test
     void deleteSingleProduct() {
         List<Integer> ids = getIds();
         // delete them all
         ids.forEach(id -> template.delete("/rest/{id}", id));
         // check that they're gone
-        ResponseEntity<Product[]> entity = template.getForEntity(
-                "/products", Product[].class);
-        assertEquals(0, entity.getBody().length);
+        List<Product> products = getProducts(null);
+        assertEquals(0, products.size());
         // rely on automatic rollback to restore them
     }
 
