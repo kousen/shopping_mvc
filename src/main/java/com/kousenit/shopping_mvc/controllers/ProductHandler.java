@@ -6,6 +6,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.function.ServerRequest;
 import org.springframework.web.servlet.function.ServerResponse;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
@@ -34,7 +35,11 @@ public class ProductHandler {
     }
 
     public ServerResponse createProduct(ServerRequest request) throws ServletException, IOException {
-        repository.save(request.body(Product.class));
-        return ok().build();
+        Product product = repository.save(request.body(Product.class));
+        String requestURI = request.servletRequest().getRequestURI();
+        return ServerResponse.created(
+                UriComponentsBuilder.fromPath(requestURI)
+                    .path(product.getId().toString()).build().toUri()
+        ).body(product);
     }
 }
